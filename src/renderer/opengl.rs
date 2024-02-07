@@ -101,6 +101,25 @@ impl OpenGl {
         let context = glow::Context::from_webgl1_context(webgl1_context);
         Self::new_from_context(context, true)
     }
+    #[cfg(target_arch = "wasm32")]
+    pub fn new_from_html_offscreen_canvas(canvas: &web_sys::OffscreenCanvas) -> Result<Self, ErrorKind> {
+        let mut attrs = web_sys::WebGlContextAttributes::new();
+        attrs.stencil(true);
+        attrs.antialias(false);
+
+        use wasm_bindgen::JsCast;
+        let webgl1_context = match canvas.get_context_with_context_options("webgl", &attrs) {
+            Ok(Some(context)) => context.dyn_into::<web_sys::WebGlRenderingContext>().unwrap(),
+            _ => {
+                return Err(ErrorKind::GeneralError(
+                    "Canvas::getContext failed to retrieve WebGL 1 context".to_owned(),
+                ))
+            }
+        };
+
+        let context = glow::Context::from_webgl1_context(webgl1_context);
+        Self::new_from_context(context, true)
+    }
 
     fn new_from_context(context: glow::Context, is_opengles_2_0: bool) -> Result<Self, ErrorKind> {
         let debug = cfg!(debug_assertions);
